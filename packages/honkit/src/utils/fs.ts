@@ -4,7 +4,6 @@ import destroy from "destroy";
 import tmp from "tmp";
 import path from "path";
 import cp from "cp";
-import cpr from "cpr";
 import Promise from "./promise";
 import http from "http";
 import https from "https";
@@ -123,6 +122,20 @@ function uniqueFilename(base, filename) {
     return Promise(path.relative(base, _filename));
 }
 
+async function copyDirImpl(
+    from: string,
+    to: string,
+    opts?: { deleteFirst?: boolean; overwrite?: boolean; confirm?: boolean }
+) {
+    if (opts?.deleteFirst) {
+        await fs.promises.rm(to, { recursive: true, force: true }).catch(() => undefined);
+    }
+    await fs.promises.cp(from, to, {
+        recursive: true,
+        force: opts?.overwrite !== false
+    });
+}
+
 // Create all required folder to create a file
 function ensureFile(filename) {
     const base = path.dirname(filename);
@@ -213,7 +226,7 @@ export default {
 
     copy: Promise.nfbind(cp),
 
-    copyDir: Promise.nfbind(cpr),
+    copyDir: (from, to, opts) => Promise(copyDirImpl(from, to, opts)),
     tmpFile: genTmpFile,
     /**
      * @deprecated use tmpdir.ts
